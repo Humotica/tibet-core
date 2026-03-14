@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tibet-core"
-version = "0.2.0"
+version = "0.3.0"
 description = "Token-based Intent, Behavior, Evidence & Trust - Cryptographic provenance for trustworthy systems"
 readme = "README.md"
 license = {text = "MIT"}
@@ -38,7 +38,8 @@ dependencies = []
 
 [project.optional-dependencies]
 full = ["httpx>=0.24.0"]
-dev = ["pytest>=7.0", "ruff>=0.1.0"]
+ping = ["tibet-ping>=0.1.3"]
+dev = ["pytest>=7.0", "ruff>=0.1.0", "tibet-ping>=0.1.3"]
 
 [project.urls]
 Homepage = "https://humotica.com"

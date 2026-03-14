@@ -4,9 +4,17 @@ TIBET Token Storage backends.
 
 import json
 from abc import ABC, abstractmethod
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 from .token import Token
+
+# File locking: available on Unix, graceful fallback elsewhere
+try:
+    import fcntl
+    _HAS_FCNTL = True
+except ImportError:
+    _HAS_FCNTL = False
 
 
 class TokenStore(ABC):
@@ -103,6 +111,7 @@ class FileStore(TokenStore):
     File-based token storage (JSONL).
 
     Append-only, persistent, audit-friendly.
+    Thread-safe with fcntl file locking (Unix) or graceful fallback.
     Good for: production, compliance, long-term audit trails.
     """
 
@@ -129,9 +138,20 @@ class FileStore(TokenStore):
                         self._cache.append(token)
 
     def add(self, token: Token) -> None:
-        # Append to file
+        """Append token to file with exclusive lock."""
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        line = token.to_json() + "\n"
+
         with open(self.path, "a", encoding="utf-8") as f:
-            f.write(token.to_json() + "\n")
+            if _HAS_FCNTL:
+                fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+                try:
+                    f.write(line)
+                    f.flush()
+                finally:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+            else:
+                f.write(line)
 
         # Update cache
         self._index[token.token_id] = len(self._cache)
@@ -170,6 +190,77 @@ class FileStore(TokenStore):
         self._cache = []
         self._index = {}
         self.path.write_text("")
+
+    def rotate(self, max_age_days: int = 30) -> int:
+        """
+        Rotate old tokens to archive file.
+
+        Moves tokens older than max_age_days to an archive JSONL file.
+        Keeps the active file small and manageable.
+
+        Args:
+            max_age_days: Maximum age of tokens to keep in active file
+
+        Returns:
+            Number of rotated tokens
+        """
+        if not self._cache:
+            return 0
+
+        cutoff = datetime.now().isoformat()
+        # Calculate cutoff from max_age_days
+        from datetime import timedelta
+        cutoff_dt = datetime.now() - timedelta(days=max_age_days)
+        cutoff = cutoff_dt.isoformat()
+
+        keep = []
+        archive = []
+
+        for token in self._cache:
+            if token.timestamp < cutoff:
+                archive.append(token)
+            else:
+                keep.append(token)
+
+        if not archive:
+            return 0
+
+        # Write archive file
+        date_str = datetime.now().strftime("%Y%m%d")
+        archive_path = Path(f"{self.path}.archive.{date_str}.jsonl")
+
+        with open(archive_path, "a", encoding="utf-8") as f:
+            if _HAS_FCNTL:
+                fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+                try:
+                    for token in archive:
+                        f.write(token.to_json() + "\n")
+                    f.flush()
+                finally:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+            else:
+                for token in archive:
+                    f.write(token.to_json() + "\n")
+
+        # Rewrite active file with only kept tokens
+        with open(self.path, "w", encoding="utf-8") as f:
+            if _HAS_FCNTL:
+                fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+                try:
+                    for token in keep:
+                        f.write(token.to_json() + "\n")
+                    f.flush()
+                finally:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+            else:
+                for token in keep:
+                    f.write(token.to_json() + "\n")
+
+        # Update cache and index
+        self._cache = keep
+        self._index = {t.token_id: i for i, t in enumerate(keep)}
+
+        return len(archive)
 
     def verify_file(self) -> dict:
         """

@@ -9,9 +9,10 @@ Each token captures:
 """
 
 import hashlib
+import hmac
 import json
 from dataclasses import dataclass, field, asdict
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -25,7 +26,11 @@ class TokenState(Enum):
     RESOLVED = "resolved"
 
 
-@dataclass
+# Maximum seconds a timestamp may be in the future
+MAX_FUTURE_SECONDS = 60
+
+
+@dataclass(frozen=True)
 class Token:
     """
     TIBET provenance token.
@@ -45,7 +50,7 @@ class Token:
 
         parent_id: Parent token for chain linking
         state: Current lifecycle state
-        content_hash: SHA-256 of token content
+        content_hash: SHA-256 (or HMAC-SHA256) of token content
         signature: Optional cryptographic signature
     """
     token_id: str
@@ -70,10 +75,10 @@ class Token:
     def __post_init__(self):
         """Compute content hash if not set."""
         if not self.content_hash:
-            self.content_hash = self._compute_hash()
+            object.__setattr__(self, "content_hash", self._compute_hash())
 
-    def _compute_hash(self) -> str:
-        """Compute SHA-256 hash of token content."""
+    def _hash_content(self) -> bytes:
+        """Serialize token content for hashing."""
         data = {
             "token_id": self.token_id,
             "action": self.action,
@@ -86,12 +91,35 @@ class Token:
             "parent_id": self.parent_id,
             "state": self.state.value if isinstance(self.state, TokenState) else self.state,
         }
-        content = json.dumps(data, sort_keys=True, default=str)
-        return hashlib.sha256(content.encode()).hexdigest()
+        return json.dumps(data, sort_keys=True, default=str).encode()
 
-    def verify(self) -> bool:
-        """Verify token integrity by recomputing hash."""
-        return self.content_hash == self._compute_hash()
+    def _compute_hash(self, key: Optional[bytes] = None) -> str:
+        """
+        Compute hash of token content.
+
+        Args:
+            key: HMAC key. If provided, uses HMAC-SHA256.
+                 If None, uses plain SHA-256 (backward compatible).
+
+        Returns:
+            Hex digest string
+        """
+        content = self._hash_content()
+        if key:
+            return hmac.new(key, content, hashlib.sha256).hexdigest()
+        return hashlib.sha256(content).hexdigest()
+
+    def verify(self, key: Optional[bytes] = None) -> bool:
+        """
+        Verify token integrity by recomputing hash.
+
+        Args:
+            key: HMAC key used during creation. None for plain SHA-256.
+
+        Returns:
+            True if hash matches
+        """
+        return hmac.compare_digest(self.content_hash, self._compute_hash(key))
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
@@ -124,3 +152,26 @@ def create_token_id(prefix: str = "tibet") -> str:
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
     random_part = hashlib.sha256(f"{timestamp}{id(object())}".encode()).hexdigest()[:8]
     return f"{prefix}_{timestamp}_{random_part}"
+
+
+def validate_timestamp(ts: str) -> bool:
+    """
+    Validate that a timestamp is not too far in the future.
+
+    Args:
+        ts: ISO format timestamp string
+
+    Returns:
+        True if timestamp is valid (not >60s in the future)
+    """
+    try:
+        dt = datetime.fromisoformat(ts)
+        # Make aware if naive
+        if dt.tzinfo is None:
+            now = datetime.now()
+        else:
+            now = datetime.now(timezone.utc)
+        diff = (dt - now).total_seconds()
+        return diff <= MAX_FUTURE_SECONDS
+    except (ValueError, TypeError):
+        return False
