@@ -43,7 +43,7 @@ from .chain import Chain
 from .store import MemoryStore, FileStore
 from .bridge import NetworkBridge
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 __all__ = [
     "Token",
     "TokenState",
