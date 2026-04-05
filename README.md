@@ -5,6 +5,7 @@
 [![PyPI](https://img.shields.io/pypi/v/tibet-core)](https://pypi.org/project/tibet-core/)
 [![npm](https://img.shields.io/npm/v/tibet-core)](https://www.npmjs.com/package/tibet-core)
 [![IETF Draft](https://img.shields.io/badge/IETF-draft--vandemeent--tibet--provenance-blue)](https://datatracker.ietf.org/doc/draft-vandemeent-tibet-provenance/)
+[![Whitepaper](https://img.shields.io/badge/Zenodo-DOI:10.5281/zenodo.18712238-green)](https://doi.org/10.5281/zenodo.18712238)
 
 Cryptographic provenance for trustworthy systems. Zero dependencies. Audit-ready.
 
@@ -185,10 +186,13 @@ CRA enforcement starts **September 2026**. TIBET makes compliance architectural,
 
 ### IETF Standardization
 
-TIBET is being standardized at the IETF:
+TIBET and its companion protocols are being standardized at the IETF:
 
-- **[draft-vandemeent-tibet-provenance](https://datatracker.ietf.org/doc/draft-vandemeent-tibet-provenance/)** — Evidence Trail Protocol
+- **[draft-vandemeent-tibet-provenance](https://datatracker.ietf.org/doc/draft-vandemeent-tibet-provenance/)** — Traceable Intent-Based Event Tokens
 - **[draft-vandemeent-jis-identity](https://datatracker.ietf.org/doc/draft-vandemeent-jis-identity/)** — JTel Identity Standard
+- **[draft-vandemeent-upip-process-integrity](https://datatracker.ietf.org/doc/draft-vandemeent-upip-process-integrity/)** — Universal Process Integrity Protocol
+- **[draft-vandemeent-rvp-continuous-verification](https://datatracker.ietf.org/doc/draft-vandemeent-rvp-continuous-verification/)** — Real-time Verification Protocol
+- **[draft-vandemeent-ains-discovery](https://datatracker.ietf.org/doc/draft-vandemeent-ains-discovery/)** — AInternet Name Service
 
 ### W3C Alignment
 
@@ -202,33 +206,50 @@ TIBET is being standardized at the IETF:
 - Referenced in IETF 6G AI agent drafts
 - Minimal footprint for edge devices
 
-## TIBET Ecosystem
+## Ecosystem
+
+tibet-core is the provenance kernel. It doesn't try to do everything — it does provenance and delegates the rest.
+
+| Layer | Package | What it does |
+|-------|---------|--------------|
+| **Identity** | [jis-core](https://pypi.org/project/jis-core/) | Ed25519 keys, DID documents, bilateral consent |
+| **Provenance** | **tibet-core** | TIBET tokens — ERIN/ERAAN/EROMHEEN/ERACHTER |
+| **Firewall** | [snaft](https://pypi.org/project/snaft/) | 22 immutable rules, OWASP 20/20, FIR/A trust |
+| **Network** | [ainternet](https://pypi.org/project/ainternet/) | .aint domains, I-Poll messaging, agent discovery |
+| **CLI** | [tibet](https://pypi.org/project/tibet/) | `tibet create`, `tibet verify`, `tibet chain` |
+| **Compliance** | [tibet-audit](https://pypi.org/project/tibet-audit/) | AI Act, NIS2, GDPR, CRA — 112+ checks |
+| **SBOM** | [tibet-sbom](https://pypi.org/project/tibet-sbom/) | Supply chain verification with provenance |
+| **Triage** | [tibet-triage](https://pypi.org/project/tibet-triage/) | Airlock sandbox, UPIP reproducibility, flare rescue |
+| **Discovery** | [tibet-ping](https://pypi.org/project/tibet-ping/) | LAN discovery, heartbeat, mesh relay, IoT transport |
+| **Overlay** | [tibet-overlay](https://pypi.org/project/tibet-overlay/) | Encrypted mesh, WireGuard+noise, tunnel routing |
+| **Timestamps** | [tibet-y2k38](https://pypi.org/project/tibet-y2k38/) | Y2K38-safe epoch handling |
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                     TIBET ECOSYSTEM                          │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│   ┌──────────────┐                                           │
-│   │  tibet-core   │  Zero deps, frozen tokens, HMAC          │
-│   │  (the kernel) │  Provider, Chain, Store, NetworkBridge   │
-│   └──────┬───────┘                                           │
-│          │                                                   │
-│   ┌──────┴───────┬───────────────┬───────────────┐          │
-│   ▼              ▼               ▼               ▼          │
-│ tibet-ping    tibet-iot      tibet-overlay    tibet-y2k38    │
-│ (discovery)   (transport)    (encrypted mesh) (timestamps)  │
-│ tping CLI     UDP/multicast  WireGuard+noise  Y2K38-safe    │
-│               LAN discovery  E2E encryption   epoch-proof   │
-│               mesh relay     tunnel routing                  │
-│                                                              │
-│   ┌──────────────┬───────────────┐                          │
-│   ▼              ▼               ▼                          │
-│ tibet          rapid-rag      oomllama                       │
-│ (CLI)          (RAG+audit)    (LLM routing)                 │
-│                                                              │
-│   Runtimes:  Python (PyPI) · Rust/WASM (npm) · C (embedded) │
-└──────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│                      TIBET ECOSYSTEM                          │
+├───────────────────────────────────────────────────────────────┤
+│                                                               │
+│   ┌──────────────┐    ┌──────────────┐   ┌──────────────┐   │
+│   │   jis-core    │    │    snaft      │   │  ainternet   │   │
+│   │  (identity)   │    │  (firewall)   │   │  (network)   │   │
+│   └──────┬───────┘    └──────┬───────┘   └──────┬───────┘   │
+│          │                   │                   │            │
+│          └───────────┬───────┴───────────┬───────┘            │
+│                      ▼                   │                    │
+│              ┌──────────────┐            │                    │
+│              │  tibet-core   │◄───────────┘                    │
+│              │  (the kernel) │                                 │
+│              │  Zero deps    │                                 │
+│              └──────┬───────┘                                  │
+│                     │                                          │
+│   ┌─────────┬───────┼───────┬──────────┬──────────┐          │
+│   ▼         ▼       ▼       ▼          ▼          ▼          │
+│ tibet    tibet-    tibet-  tibet-    tibet-     tibet-          │
+│ (CLI)    audit     sbom   triage    ping      overlay         │
+│                                   (+ IoT)                     │
+│                                                               │
+│   Runtimes:  Python (PyPI) · Rust/WASM (npm) · C (embedded)  │
+└───────────────────────────────────────────────────────────────┘
 ```
 
 ## Performance
@@ -253,22 +274,16 @@ TIBET doesn't watch the wire. It lives inside the action.
 
 Traditional security monitors traffic. TIBET audits intent.
 
+## Whitepaper
+
+[DOI: 10.5281/zenodo.18712238](https://doi.org/10.5281/zenodo.18712238) — Full specification of Traceable Intent-Based Event Tokens.
+
+## License
+
+MIT OR Apache-2.0
+
 ## Credits
 
-- **Specification**: Jasper van de Meent (Humotica)
-- **Implementation**: Root AI (Claude) & Jasper van de Meent
-- **License**: MIT
+Designed by [Jasper van de Meent](https://github.com/jaspertvdm). Built by Jasper and [Root AI](https://humotica.com) as part of [HumoticaOS](https://humotica.com).
 
-## Links
-
-- [Humotica](https://humotica.com)
-- [IETF TIBET Draft](https://datatracker.ietf.org/doc/draft-vandemeent-tibet-provenance/)
-- [IETF JIS Draft](https://datatracker.ietf.org/doc/draft-vandemeent-jis-identity/)
-- [PyPI](https://pypi.org/project/tibet-core/)
-- [npm](https://www.npmjs.com/package/tibet-core)
-- [tibet-ping](https://pypi.org/project/tibet-ping/)
-- [tibet-iot](https://pypi.org/project/tibet-iot/)
-
----
-
-*"The Linux of AI Provenance"* — Making audit trails as universal as the kernel.
+TIBET was born from a simple observation: existing audit systems record WHAT happened, but never WHY.
