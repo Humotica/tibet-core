@@ -13,7 +13,7 @@ From microcontrollers to cloud servers — every action gets an immutable, verif
 
 ## What is TIBET?
 
-**T**oken-based **I**ntent, **B**ehavior, **E**vidence & **T**rust
+**T**ime-**I**ntent-**B**ased **E**vent **T**okens
 
 TIBET captures the four dimensions of every action:
 
