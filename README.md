@@ -70,7 +70,39 @@ print(token.content_hash)  # SHA-256
 audit = tibet.export(format="jsonl")
 ```
 
-### Context Manager
+## OSAPI Bootstrap (v1.0, since 0.5.0b1)
+
+The `bootstrap()` API binds your package to the central **tibet-OSAPI** — half of the **OSAPI bootstrap-pair** with [`jis-core`](https://pypi.org/project/jis-core/). This is the v1.0-canonical way to ensure all emits land in **one shared chain** instead of 100+ independent Provider instances. Identity-bound, fail-closed, audit-by-construction — the fork → main move.
+
+```python
+from tibet_core import bootstrap
+
+# Bind to the central tibet-OSAPI (with a JIS-signed actor-claim)
+sess = bootstrap(
+    actor="my-package",
+    actor_claim=b"<JIS-signed Ed25519 claim>",
+)
+
+# emit / query / fork — all flow through the shared chain
+result = sess.emit(action="user_login", erin={"user": "alice"})
+tokens = sess.query(action="user_login")
+fork   = sess.fork(parent_token=result["token_id"], actor_to="worker_b")
+```
+
+### No-fail-open discipline
+
+If the OSAPI is unreachable: `bootstrap()` raises `BootstrapError` by default. *The waakhond mag niet sterven* — see the spec for the soft-stop protocol. For dev/test only, set `TIBET_SOFT_BOOTSTRAP=1` to degrade to a local ephemeral provider with a loud warning.
+
+### Discovery (in order)
+1. explicit `url=` argument
+2. env-var `TIBET_OSAPI_URL`
+3. well-known UDS: `/var/run/tibet/osapi.sock`
+4. TCP fallback: `127.0.0.1:18443`
+
+### Spec
+Full wire-protocol: [`docs/specs/osapi-protocol-v1.md`](../../docs/specs/osapi-protocol-v1.md). Pair-companion: [`jis-core`](https://pypi.org/project/jis-core/) on port 18444 (`claim`/`bind`/`fira`). A non-kernel package binds to **both** at init — one shared identity-store, one shared chain.
+
+### Context Manager (legacy direct-Provider usage)
 
 ```python
 with Provider(actor="jis:my_app") as tibet:
@@ -212,7 +244,7 @@ tibet-core is the provenance kernel. It doesn't try to do everything — it does
 
 | Layer | Package | What it does |
 |-------|---------|--------------|
-| **Identity** | [jis-core](https://pypi.org/project/jis-core/) | Ed25519 keys, DID documents, bilateral consent |
+| **Identity** | [jis-core](https://pypi.org/project/jis-core/) | Ed25519 keys, JIS Identity Documents, bilateral consent |
 | **Provenance** | **tibet-core** | TIBET tokens — ERIN/ERAAN/EROMHEEN/ERACHTER |
 | **Firewall** | [snaft](https://pypi.org/project/snaft/) | 22 immutable rules, OWASP 20/20, FIR/A trust |
 | **Network** | [ainternet](https://pypi.org/project/ainternet/) | .aint domains, I-Poll messaging, agent discovery |
@@ -287,3 +319,21 @@ MIT OR Apache-2.0
 Designed by [Jasper van de Meent](https://github.com/jaspertvdm). Built by Jasper and [Root AI](https://humotica.com) as part of [HumoticaOS](https://humotica.com).
 
 TIBET was born from a simple observation: existing audit systems record WHAT happened, but never WHY.
+
+---
+
+**Stack-positie:** Groep `substrate` · `tibet-OSAPI provider` (kernel — exposes the OSAPI other packages bind to) · → [`jis-core`](https://pypi.org/project/jis-core/) (parallel substraat) · → alle hogere lagen via OSAPI-handshake · See [`STACK.md`](https://github.com/Humotica/.github/blob/main/STACK.md) · See `demo/golden-path/` for the spine end-to-end.
+
+---
+
+## Enterprise
+
+For private hub hosting, SLA support, custom integrations, or compliance guidance:
+
+| | |
+|---|---|
+| **Enterprise** | enterprise@humotica.com |
+| **Support** | support@humotica.com |
+| **Security** | security@humotica.com |
+
+See [ENTERPRISE.md](ENTERPRISE.md) for details.

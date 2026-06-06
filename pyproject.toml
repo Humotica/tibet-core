@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tibet-core"
-version = "0.3.1"
-description = "Token-based Intent, Behavior, Evidence & Trust - Cryptographic provenance for trustworthy systems"
+version = "0.5.0"
+description = "Token-based Intent, Behavior, Evidence & Trust - Cryptographic provenance for trustworthy systems. ERIN/ERAAN/EROMHEEN/ERACHTER semantics."
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"

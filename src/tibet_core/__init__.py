@@ -42,8 +42,21 @@ from .provider import Provider
 from .chain import Chain
 from .store import MemoryStore, FileStore
 from .bridge import NetworkBridge
+from .osapi import (
+    bootstrap,
+    Session,
+    OSAPIServer,
+    OSAPIError,
+    BootstrapError,
+    IdentityError,
+    VersionError,
+    ProtocolError,
+    PROTOCOL_VERSION as OSAPI_PROTOCOL_VERSION,
+    register_emit_hook,
+    clear_emit_hooks,
+)
 
-__version__ = "0.3.1"
+__version__ = "0.5.0b2"
 __all__ = [
     "Token",
     "TokenState",
@@ -54,4 +67,14 @@ __all__ = [
     "NetworkBridge",
     "create_token_id",
     "validate_timestamp",
+    # OSAPI v1.0 (handshake-only in 0.5.0a1)
+    "bootstrap",
+    "Session",
+    "OSAPIServer",
+    "OSAPIError",
+    "BootstrapError",
+    "IdentityError",
+    "VersionError",
+    "ProtocolError",
+    "OSAPI_PROTOCOL_VERSION",
 ]
