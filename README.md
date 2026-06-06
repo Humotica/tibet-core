@@ -2,6 +2,8 @@
 
 **The Linux of AI Provenance**
 
+> **Two implementations, one standard.** `tibet-core` ships as this **Python package** (`pip install tibet-core` · [PyPI](https://pypi.org/project/tibet-core/)) and as a **Rust crate** (`cargo add tibet-core` · [crates.io](https://crates.io/crates/tibet-core) · source [github.com/jaspertvdm/tibet-core](https://github.com/jaspertvdm/tibet-core)). Same TIBET provenance core, two ecosystems — pick the one that fits your stack.
+
 [![PyPI](https://img.shields.io/pypi/v/tibet-core)](https://pypi.org/project/tibet-core/)
 [![npm](https://img.shields.io/npm/v/tibet-core)](https://www.npmjs.com/package/tibet-core)
 [![IETF Draft](https://img.shields.io/badge/IETF-draft--vandemeent--tibet--provenance-blue)](https://datatracker.ietf.org/doc/draft-vandemeent-tibet-provenance/)
